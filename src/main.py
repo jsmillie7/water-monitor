@@ -8,7 +8,7 @@ from water_monitor import Monitor
 
 
 def main():
-    monitor = Monitor(samples=250, threshold=800)
+    monitor = Monitor(samples=250, threshold=800, post_data=True)
     monitor.run_forever()
 
 

@@ -25,9 +25,10 @@ class Monitor:
         """Acoustically monitor an environment by determining when the
         root-mean-square of the amplitude exceeds a threshold.
 
-        :param samples: The size of the RMS history
-        :param threshold: The minimum RMS value that triggers an event
-        :param post_data: Send data to webhook on event
+        Args:
+            samples (int): The size of the RMS history
+            threshold (int): The minimum RMS value that triggers an event
+            post_data (bool): Send data to webhook on event
         """
         led.off()
         self.history = deque([], samples)
@@ -73,7 +74,7 @@ class Monitor:
         led.off()
 
         while True:
-            # While we are updating the rolling RMS continually, we don't need
+            # While we are updating the rolling RMS continually, don't need
             # every single data point, so only calculate every 100th point
             if i % 100 == 0:
                 x = self.rolling_rms() - self.offset
@@ -90,8 +91,3 @@ class Monitor:
             else:
                 self.rolling_rms()
             i += 1
-
-
-if __name__ == "__main__":
-    monitor = Monitor(samples=250, threshold=800)
-    monitor.run_forever()

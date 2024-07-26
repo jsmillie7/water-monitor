@@ -19,6 +19,9 @@ class Notifier:
     client = None
 
     def __init__(self):
+        # this json file is generated when you run the build script
+        # and is uploaded to the board, next to the python files on
+        # the micropython filesystem.
         with open("data.json", "r") as df:
             self.data = json.load(df)
 
@@ -57,7 +60,16 @@ class Notifier:
         self.client.active(False)
         print("Disconnected Wi-Fi")
 
-    def blink_forever(self, rate=1):
+    @staticmethod
+    def blink_forever(rate=1):
+        """Blink the LED forever at a specified rate.
+
+        This loop cannot be broken without resetting the
+        board. Different rates can indicate different errors.
+
+        Args:
+            rate (int): number of blinks per second (Hz)
+        """
         while True:
             led.toggle()
             time.sleep(1 / rate)
