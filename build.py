@@ -23,22 +23,28 @@ def create_data_json():
 
     url = input("Endpoint URL: ").strip()
 
-    data = {
-        "SSID": ssid,
-        "PASSWORD": pw,
-        "COM": com,
-        "URL": url
-    }
+    data = {"SSID": ssid, "PASSWORD": pw, "COM": com, "URL": url}
     JSON_DATA_FILE.write_text(json.dumps(data, indent=4))
     print(f"Wrote {JSON_DATA_FILE}")
 
 
+def ampy_cmd(subcommand, cwd=None):
+    """Run an ampy from the command line"""
+    com_port = json.loads(JSON_DATA_FILE.read_text())["COM"]
+    cmd = ["ampy", "--port", com_port, *subcommand]
+    subprocess.run(cmd, cwd=cwd)
+
+
 def put_file_cmd(file: Path):
     """Put a file on the micropython board"""
-    com_port = json.loads(JSON_DATA_FILE.read_text())["COM"]
-    cmd = ["ampy", "--port", com_port, "put", file.name]
-    subprocess.run(cmd, cwd=file.parent)
+    subcmd = ["put", file.name]
+    ampy_cmd(subcmd, cwd=file.parent)
     print(f"PUT {file}")
+
+
+def reset_cmd():
+    """Send soft reset command to ampy"""
+    ampy_cmd(["reset"])
 
 
 def main():
@@ -46,17 +52,15 @@ def main():
     if not JSON_DATA_FILE.exists():
         create_data_json()
 
-    src = Path(__file__).parent / 'src'
-    files = [
-        JSON_DATA_FILE,
-        *src.glob("*.py")
-    ]
+    src = Path(__file__).parent / "src"
+    files = [JSON_DATA_FILE, *src.glob("*.py")]
 
     for file in files:
         put_file_cmd(file)
 
+    reset_cmd()
     print("Finished Uploading...")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

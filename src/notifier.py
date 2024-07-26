@@ -41,9 +41,11 @@ class Notifier:
         self.client.connect(self.ssid, self.password)
 
         for _ in range(10):
+            led.toggle()
             if self.client.isconnected():
                 print("Connected to Wi-Fi")
                 print("IP Address:", self.client.ifconfig()[0])
+                led.off()
                 break
             time.sleep(1)
         else:
