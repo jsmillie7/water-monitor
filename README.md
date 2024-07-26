@@ -36,8 +36,7 @@ cd ~/water-monitor
 ```
 
 The first time you run the build script, it will ask
-a series of questions and write them locally to a json
-data file.
+a series of questions and write a json data file.
 
 That data file will be written to the board, as will several
 python files.
