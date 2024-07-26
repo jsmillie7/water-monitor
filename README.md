@@ -5,6 +5,10 @@ Using a Raspberry Pi Pico W board with a MAX4466
 microphone, can you monitor your water usage 
 acoustically?
 
+Using a 3D-printed pipe mount for the microphone,
+get real-time push notifications using IFTTT on
+your phone whenever water turns on or off.
+
 
 ### Hardware Connections
 
