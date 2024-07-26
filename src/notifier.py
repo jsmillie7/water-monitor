@@ -75,6 +75,7 @@ class Notifier:
             time.sleep(1 / rate)
 
     def post_data(self, data):
+        """Send json data to the endpoint url from data.json"""
         json_data = json.dumps(data)
         try:
             response = urequests.post(
@@ -90,13 +91,8 @@ class Notifier:
 
     @classmethod
     def send(cls, data):
+        """class method to connect, send, then disconnect"""
         notifier = cls()
         notifier.connect()
         notifier.post_data(data=data)
         notifier.disconnect()
-
-
-if __name__ == "__main__":
-    data = {"value1": "started"}
-    Notifier.send(data=data)
-
