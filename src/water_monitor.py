@@ -5,7 +5,8 @@ Get a rolling RMS value from an analog microphone to
 determine acoustically if water is running through a
 nearby pipe.
 """
-
+import time
+import math
 import machine
 from collections import deque
 
@@ -42,17 +43,18 @@ class Monitor:
     def __del__(self):
         notifier.disconnect()
 
-    def rolling_rms(self):
-        """Calculate a new the new RMS"""
-        self.history.append((adc.read_u16() - MID_POINT) ** 2)
-        return (sum(self.history) / self.size) ** 0.5
+    def rms(self):
+        """sample the audio and return the rms value of it"""
+        for _ in range(self.size):
+            self.history.append(adc.read_u16())
+            time.sleep_us(100)
+        return self.calc_rms()
 
-    def calculate_offset(self):
-        """Run at startup, ideally when there is no other noise, to calculate
-        and offset microphone noise.
-        """
-        self.offset = (sum(self.history) / self.size) ** 0.5
-        print("Calculated Offset = ", self.offset)
+    def calc_rms(self):
+        """Calculate the RMS of the history deque"""
+        total_square = sum((x - 32768) ** 2 for x in self.history)
+        rms = math.sqrt(total_square / self.size)
+        return rms
 
     def send(self, value):
         """Conditionally send an update via HTTP post requst"""
@@ -61,33 +63,25 @@ class Monitor:
 
     def run_forever(self):
         """Preload the history then run the monitor until interrupted."""
-        i = 0
-        # Preloading the rolling rms data allows the rms values to level
-        # out prior to starting the monitor.
-        print("Starting preload")
-        while i < 3 * self.size:
-            self.rolling_rms()
-            i += 1
+        for _ in range(3):
+            self.rms()
         print("Calibrating...")
-        self.calculate_offset()
+        self.offset = self.calc_rms()
+        print("Offset =", self.offset)
         self.water_running = False
         led.off()
 
         while True:
-            # While we are updating the rolling RMS continually, don't need
-            # every single data point, so only calculate every 100th point
-            if i % 100 == 0:
-                x = self.rolling_rms() - self.offset
-                if x > self.threshold and not self.water_running:
-                    led.on()
-                    print("[ON]", x)
-                    self.water_running = True
-                    self.send("started")
-                elif x < self.threshold * 0.5 and self.water_running:
-                    led.off()
-                    print("[OFF]", x)
-                    self.water_running = False
-                    self.send("finished")
+            x = self.rms() - self.offset
+            if x > self.threshold and not self.water_running:
+                led.on()
+                print("[ON]", x)
+                self.water_running = True
+                self.send("started")
+            elif x < self.threshold * 0.5 and self.water_running:
+                led.off()
+                print("[OFF]", x)
+                self.water_running = False
+                self.send("finished")
             else:
-                self.rolling_rms()
-            i += 1
+                print(x)
