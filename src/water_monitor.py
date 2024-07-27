@@ -63,6 +63,7 @@ class Monitor:
 
     def run_forever(self):
         """Preload the history then run the monitor until interrupted."""
+        print("Ensure environment is silent...")
         for _ in range(3):
             self.rms()
         print("Calibrating...")
