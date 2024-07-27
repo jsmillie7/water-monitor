@@ -5,7 +5,7 @@ Get a rolling RMS value from an analog microphone to
 determine acoustically if water is running through a
 nearby pipe.
 """
-import time
+import utime
 import math
 import machine
 from collections import deque
@@ -35,7 +35,9 @@ class Monitor:
         self.history = deque([], samples)
         self.size = samples
         self.threshold = threshold
-        self.offset = 0
+        self.rms_offset = 0
+        self.delay_offset = 20
+        self.calibrated = False
 
         self.water_running = False
         self.post_data = post_data
@@ -44,11 +46,28 @@ class Monitor:
         notifier.disconnect()
 
     def rms(self):
-        """sample the audio and return the rms value of it"""
+        """sample the audio for 1s and return the rms value of it"""
+        delay = int(1e6 // self.size) - self.delay_offset
+        start = utime.ticks_ms()
+
         for _ in range(self.size):
             self.history.append(adc.read_u16())
-            time.sleep_us(100)
-        return self.calc_rms()
+            utime.sleep_us(delay)
+
+        if self.calibrated:
+            return self.calc_rms()
+
+        dur = utime.ticks_ms() - start
+        if dur > 1010:
+            self.delay_offset += 1
+        elif dur < 990:
+            self.delay_offset -= 1
+        else:
+            self.calibrated = True
+            print("Took", dur, "| Calibrated delay offset:", self.delay_offset)
+            return
+
+        print("Took", dur, "| New delay offset:", self.delay_offset)
 
     def calc_rms(self):
         """Calculate the RMS of the history deque"""
@@ -64,16 +83,17 @@ class Monitor:
     def run_forever(self):
         """Preload the history then run the monitor until interrupted."""
         print("Ensure environment is silent...")
-        for _ in range(3):
+        print("Calibrating delay offset...")
+        while not self.calibrated:
+            led.toggle()
             self.rms()
-        print("Calibrating...")
-        self.offset = self.calc_rms()
-        print("Offset =", self.offset)
+        self.rms_offset = self.calc_rms()
+        print("Offset =", self.rms_offset)
         self.water_running = False
         led.off()
 
         while True:
-            x = self.rms() - self.offset
+            x = self.rms() - self.rms_offset
             if x > self.threshold and not self.water_running:
                 led.on()
                 print("[ON]", x)
