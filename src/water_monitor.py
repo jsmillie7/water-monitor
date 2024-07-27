@@ -57,6 +57,9 @@ class Monitor:
         if self.calibrated:
             return self.calc_rms()
 
+        # while calibrating, change the delay offset to change
+        # the total duration of sample collection to get within
+        # 1% of 1 second
         dur = utime.ticks_ms() - start
         if dur > 1010:
             self.delay_offset += 1
